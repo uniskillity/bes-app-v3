@@ -1,5 +1,7 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function HomePage() {
   const [senderEmail, setSenderEmail] = useState("");
@@ -8,58 +10,62 @@ export default function HomePage() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("");
-  const [subscriber, setSubscriber] = useState("");
-  const [subscribeStatus, setSubscribeStatus] = useState("");
+  const [darkMode, setDarkMode] = useState(true);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (!senderEmail || !appPassword || !emails || !subject || !message) {
       setStatus("⚠️ Please fill in all fields.");
       return;
     }
-    setStatus(
-      `✅ Emails sent from ${senderEmail} to ${emails.split(",").length} recipients`
-    );
-    setSenderEmail("");
-    setAppPassword("");
-    setEmails("");
-    setSubject("");
-    setMessage("");
-  };
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!subscriber) {
-      setSubscribeStatus("⚠️ Please enter your email.");
-      return;
+    try {
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: senderEmail,
+          password: appPassword,
+          to: emails,
+          subject,
+          message,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setStatus(`✅ Emails sent to ${emails.split(",").length} recipients`);
+        setSenderEmail("");
+        setAppPassword("");
+        setEmails("");
+        setSubject("");
+        setMessage("");
+      } else {
+        setStatus(`❌ Failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("❌ Failed to send email. Check server logs.");
     }
-    setSubscribeStatus(`✅ Subscribed with ${subscriber}`);
-    setSubscriber("");
   };
-
-  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      document.documentElement.setAttribute("data-theme", "light");
-    }
+    document.documentElement.setAttribute(
+      "data-theme",
+      darkMode ? "dark" : "light"
+    );
   }, [darkMode]);
 
   return (
     <div>
       {/* Navbar */}
       <nav className="navbar">
-        <a
-          href="/"
-          // target="_blank"
-          rel="noopener noreferrer"
-          className="logo"
-        >
+        <Link href="/" className="logo">
           BulkSender
-        </a>
-     
+        </Link>
+
         <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
           {darkMode ? "☀️ Light" : "🌙 Dark"}
         </button>
@@ -69,7 +75,8 @@ export default function HomePage() {
       <section className="hero">
         <h1 className="hero-title">Send Bulk Emails in Seconds 🚀</h1>
         <p className="hero-subtitle">
-          A minimal and fast AI-powered bulk email sender built for startups,<br />
+          A minimal and fast AI-powered bulk email sender built for startups,
+          <br />
           businesses, and freelancers.
         </p>
 
@@ -112,13 +119,13 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="footer">
         © {new Date().getFullYear()} BulkSender. Built by{" "}
-        Ali -   
+        Ali –{" "}
         <a
           href="https://www.linkedin.com/in/spaqootech/"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <i> SpaqooTech</i>
+          <i>SpaqooTech</i>
         </a>
       </footer>
     </div>
